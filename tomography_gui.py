@@ -851,9 +851,19 @@ class Example(QtGui.QWidget):
             print("Warning: could not determine runids")
             return False
 
+        try:
+            self.define_numberOfEpochs()
+        except Exception:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
+            print(ex_type)
+
+            print("Warning: could not determine the number of epochs")
+            return False
+        
         self.runidplot_entry.setText(str(self.runid))
         self.oldrunidplot_entry.setText(str(self.oldrunid))
-
+        self.nepochplot_entry.setText(str(max(self.numberOfEpochs)))
         self.runidconvergence_entry.setText(str(self.runid))
         self.runidabundances_entry.setText(str(self.runid))
         #self.runidtrads_ws_entry.setText(str(self.runid))
