@@ -151,28 +151,41 @@ class tardisthread(QtCore.QThread):
             print("Warning: could not determine runids")
             self.endtrigger.emit(1)
             return False
+        
+        try:
+            self.parent.define_numberOfEpochs()
+
+        except Exception:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
+            print(ex_type)
+
+            print("Warning: could not determine the number of epochs")
+            self.endtrigger.emit(1)
+            return False
 
         try:
 
             startpos = logging.getLogger().handlers[0].stream.tell()
-            mdl = run_tardis(self.parent.tardis_config)
-            mdl.save_spectra("spec_%05d.dat" % self.parent.runid)
+            #mdl = run_tardis(self.parent.tardis_config)
+            mdl = run_tardis('./tardis_%05d_%d.yml' % (self.parent.runid, max(self.parent.numberOfEpochs)))
+            mdl.save_spectra("spec_%05d_%d.dat" % (self.parent.runid, max(self.parent.numberOfEpochs)))
             if self.parent.save_model:
-                mdl.to_hdf5("model_%05d.h5" % self.parent.runid)
-                mdl.atom_data.lines.to_hdf("lines_%05d.h5" % self.parent.runid, "lines")
+                mdl.to_hdf5("model_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)))
+                mdl.atom_data.lines.to_hdf("lines_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)), "lines")
 
             endpos = logging.getLogger().handlers[0].stream.tell()
             logging.getLogger().handlers[0].stream.flush()
 
-            f = open("tardis_general.log", "r")
-            f.seek(startpos)
-            log = f.read(endpos-startpos)
-            modellog = open("tardis_%05d.log" % self.parent.runid, "w")
-            modellog.write(log)
-            modellog.close()
-            f.close()
+          #  f = open("tardis_general.log", "r")
+          #  f.seek(startpos)
+          #  log = f.read(endpos-startpos)
+          #  modellog = open("tardis_%05d.log" % self.parent.runid, "w")
+          #  modellog.write(log)
+          #  modellog.close()
+          #  f.close()
 
-            # @Michi: when running tardis via this gui, the model is stored at
+            #  when running tardis via this gui, the model is stored at
             # the end in the gui (in order to be able to use the old tardis gui
             # to do some additional diagnostics on the model). Could it be that
             # the python garbage collector does not clean up the old tardis
@@ -252,6 +265,8 @@ class Example(QtGui.QWidget):
         self.addshell_index = 0
         self.removeshell_index = 0
         self.window = None
+
+        self.numberOfEpochs = None
 
         self.table = QtGui.QTableWidget(5,Zmax+7,self)
         self.table.setHorizontalHeaderLabels(["active", "Vmin", "Vmax", "t", "logL/Lsun", "lam min", "lam max"] + [inv_elements[z].capitalize() for z in xrange(1, Zmax+1)])
@@ -609,7 +624,12 @@ class Example(QtGui.QWidget):
             print("Warning: invalid reddening '%s'" % self.reddeningtext)
             raise Exception
 
+
         self.reddening = reddening
+
+    def define_numberOfEpochs(self):
+
+        return self.numberOfEpochs
 
     def read_window(self):
 
@@ -795,8 +815,7 @@ class Example(QtGui.QWidget):
 
             print("Warning: could not determine runids")
             return False
-
-        fname = "tardis_%05d.yml" % self.runid
+        fname = "tardis_%05d_%d.yml" % (self.runid, max(self.numberOfEpochs))
         try:
             self.tardis_config = yaml.safe_load(open(fname, "r"))
         except IOError:
@@ -832,9 +851,19 @@ class Example(QtGui.QWidget):
             print("Warning: could not determine runids")
             return False
 
+        try:
+            self.define_numberOfEpochs()
+        except Exception:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
+            print(ex_type)
+
+            print("Warning: could not determine the number of epochs")
+            return False
+        
         self.runidplot_entry.setText(str(self.runid))
         self.oldrunidplot_entry.setText(str(self.oldrunid))
-
+        self.nepochplot_entry.setText(str(max(self.numberOfEpochs)))
         self.runidconvergence_entry.setText(str(self.runid))
         self.runidabundances_entry.setText(str(self.runid))
         #self.runidtrads_ws_entry.setText(str(self.runid))
@@ -1120,10 +1149,6 @@ class Example(QtGui.QWidget):
         ax.autoscale_view(True,True,True)
         self.abundances_figure.figure.canvas.draw()
 
-        #else:
-        #    print ("Warning: Abundances were not saved")
-        #    return False
-
     def plot_abundances_mix(self):
 
         try:
@@ -1240,9 +1265,6 @@ class Example(QtGui.QWidget):
                 y = savitzky_golay(y, window_size=self.window, order=4)
 
             if self.current_spectrum is None:
-                #print(x)
-                #print(y)
-                #print(x.shape, y.shape)
                 self.current_spectrum = ax.plot(x, y, color = "green")[0]
             else:
                 self.current_spectrum.set_data(x, y)
@@ -1417,7 +1439,8 @@ class Example(QtGui.QWidget):
                 time = data [:,2]
                 dvt=time[1:]-time[:-1]
                 indices_t=np.argwhere(np.array(dvt) == 0).reshape(-1)
-
+                #global numberOfEpochs
+                numberOfEpochs = []
 
                 for i, act in enumerate(active):
 
@@ -1432,13 +1455,14 @@ class Example(QtGui.QWidget):
                     if found_one:
 
                         self.save_tardis_files(data[i:,:], len(active) - i)
+                        numberOfEpochs.append(len(active) - i)
                         found_one = False
 
                     elif found_one_after_zero:
                         self.save_tardis_files(data[i:,:], len(active) - i)
+                        numberOfEpochs.append(len(active) - i)
                         found_one_after_zero = False
-
-                #self.save_tardis_files(data)
+                self.numberOfEpochs = numberOfEpochs
                 self.raw_abund_data = data
                 return True
             else:
@@ -1470,7 +1494,7 @@ class Example(QtGui.QWidget):
         #print("Starting sleep")
         #time.sleep(20)
         #print("Sleeping stopped")
-
+        #self.parent.nepoch = nepoch
         # write raw abundance file
         fname = "abundances_raw_%05d_%d.txt" % (self.runid , nepoch)
 
@@ -1498,10 +1522,10 @@ class Example(QtGui.QWidget):
         vmin=reduced_data[0,0]
         vmax=reduced_data[-1,1]
         velocities=np.append(vmin,reduced_data[:,1])
-        cr.table_densities(0.000231481,t,vmin,vmax,Nshellsfinal,runid,nepoch)
+        cr.table_densities(0.000231481,t,vmin,vmax,Nshellsfinal,self.runid,nepoch)
 
         # write abundance file
-        cr.mix_abunds(velocities, 0.000231481,t,vmin,vmax,Nshellsfinal,reduced_data,runid,nepoch)
+        cr.mix_abunds(velocities, 0.000231481,t,vmin,vmax,Nshellsfinal,reduced_data,self.runid, nepoch)
 
         # write Tardis yaml file
         fname = "tardis_%05d_%d.yml" % (self.runid , nepoch)
@@ -1517,10 +1541,10 @@ class Example(QtGui.QWidget):
         # adjust model-dependent parameters
         tardis_default_config["supernova"]["luminosity_requested"] = "%.3f log_lsun" % data[0, 3]
         tardis_default_config["supernova"]["time_explosion"] = "%.3f day" % (data[0, 2] + self.risetime)
-        tardis_default_config["model"]["structure"]["filename"] = "densities_%05d_%d.dat" % (self.runid,nepoch)
+        tardis_default_config["model"]["structure"]["filename"] = "densities_%05d_%d.dat" % (self.runid, nepoch)
         tardis_default_config["model"]["structure"]["v_inner_boundary"] = "%.3f km/s" % data[0,0]
         tardis_default_config["model"]["structure"]["v_outer_boundary"] = "%.3f km/s" % data[-1,1]
-        tardis_default_config["model"]["abundances"]["filename"] = "abundances_%05d_%d.dat" % (self.runid,nepoch)
+        tardis_default_config["model"]["abundances"]["filename"] = "abundances_%05d_%d.dat" % (self.runid, nepoch)
         if data[0,4] > 0 and data[0,5] > 0:
             tardis_default_config["supernova"]["luminosity_wavelength_start"] = "%.3f angstrom" % data[0,4]
             tardis_default_config["supernova"]["luminosity_wavelength_end"] = "%.3f angstrom" % data[0,5]
@@ -1548,15 +1572,6 @@ class Example(QtGui.QWidget):
         #abundances check (add or subtract from all elements)
         Xtot = data[:,6:].sum(axis=1)
         print Xtot
-
-        #if np.fabs(Xtot.mean() - 1) > 1e-3:
-        #    for i in xrange(data.shape[0]):
-        #        data[i,4:] = data[i,4:] / Xtot[i]
-
-        #    for i in xrange(data[:,4:].shape[0]):
-        #        for j in xrange(data[:,4:].shape[1]):
-        #            item = QtGui.QTableWidgetItem("%.4e" % data[i,j+4])
-        #            self.table.setItem(i, j+4, item)
 
         #abundances check (add or subtract from oxygen)
         if np.fabs(Xtot.mean() - 1) > 1e-3:
