@@ -185,15 +185,6 @@ class tardisthread(QtCore.QThread):
           #  modellog.close()
           #  f.close()
 
-            #  when running tardis via this gui, the model is stored at
-            # the end in the gui (in order to be able to use the old tardis gui
-            # to do some additional diagnostics on the model). Could it be that
-            # the python garbage collector does not clean up the old tardis
-            # model whenever a new run is started? If this is the case, how
-            # could we get around it? With something like:
-            # del(self.parent.mdl)
-            # self.parent.mdl = mdl
-            # @Talytha: as an ugly quickfix, just comment the following line
             self.parent.mdl = mdl
             logging.getLogger().handlers[0].stream.seek(0)
             self.endtrigger.emit(0)
