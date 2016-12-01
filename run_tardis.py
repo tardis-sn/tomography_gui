@@ -5,6 +5,8 @@ import argparse
 
 def run(filename, runid, nepoch):
     mdl = run_tardis(filename)
+    complete_file = open('completed_run_%05d_%d.txt' % (runid, nepoch), 'w+')
+    complete_file.close()
     mdl.save_spectra("spec_%05d_%d.dat" % (runid, nepoch))
     #mdl.to_hdf5("model_%05d_%d.h5" % (runid, nepoch))
     #mdl.atom_data.lines.to_hdf("lines_%05d_%d.h5" % (runid, nepoch), "lines")
