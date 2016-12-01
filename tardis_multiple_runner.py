@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import yaml
 import numpy as np
 import argparse
 import glob
@@ -19,11 +18,14 @@ def main(rootname):
 
     return epochs
 
-def write_submit(Nthreads, filename, rootname, defaultfile = 'mpa-pascal-default.cmd'):
+def write_submit(Nthreads, rootname, defaultfile = 'mpa-pascal-default.cmd'):
 
     epochs = main(rootname)
 
     for i in xrange(len(epochs)):
+
+        filename = 'tardis_%05d_%d.yml' %(rootname, epochs[i])
+
         with open(defaultfile, 'r') as file:
             filedata = file.read()
 
@@ -39,5 +41,4 @@ def write_submit(Nthreads, filename, rootname, defaultfile = 'mpa-pascal-default
         p = subprocess.Popen(shlex.split("qsub mpa-pascal_%05d_%d.cmd" % (rootname, epochs[i])))
 
 if __name__ == "__main__":
-    write_submit(Nthreads, rootname, defaultfile)
-#write_submit(16, 'tardis_05602_1.yml', 5602)
+    write_submit(Nthreads, rootname)
