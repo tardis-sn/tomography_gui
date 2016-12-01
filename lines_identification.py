@@ -66,7 +66,6 @@ def lineskromer(model, lines,lam_min,lam_max,fig,nbins=300):
         axes = fig.get_axes()
         ax2 = axes[1]
 
-    #Z=natom(mdl,lam_min,lam_max)
         x=np.linspace(lam_min,lam_max,nbins)
         xright=x[1:]
         xleft=x[:-1]
@@ -74,7 +73,6 @@ def lineskromer(model, lines,lam_min,lam_max,fig,nbins=300):
         bins=np.linspace(0.5,32.5,33)
         for i in xrange (nbins-1):
             Z=natom(model, lines, xleft[i],xright[i])
-            #bins=(xleft[i],xright[i])
             xs,ys=np.histogram(Z,bins)
             y[:,i]=xs
 
@@ -84,14 +82,9 @@ def lineskromer(model, lines,lam_min,lam_max,fig,nbins=300):
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=_jet)
         scalarMap.set_array(map_array)
         xcenters=(xright+xleft)*0.5
-        #fig,ax=plt.subplots()
         my_map = create_color_list(0,31,'jet')
         ax2.stackplot(xcenters,y,colors=my_map)
         cbar = fig.colorbar(scalarMap, ax = ax2, orientation='horizontal', boundaries = np.linspace(0, 31, 32))
-        #labels=[]
         cbar.set_ticks(np.linspace(1, 32, 33))
         labels=["h","he","li","be","b","c","n","o","f","ne","na","mg","al","si","p","s","cl","ar","k","ca","sc","ti","v","cr","mn","fe","co","ni","cu","zn","ga","ge"]
-#        for k,i in abunds_idents.items():
-#            labels.append(k)
         cbar.set_ticklabels(labels)
-    #return fig
