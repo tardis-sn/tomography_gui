@@ -7,6 +7,7 @@ import matplotlib.pylab as plt
 import yaml
 import threading
 import numpy as np
+import glob
 from math import factorial
 from matplotlib.figure import *
 from PyQt4 import QtGui, QtCore
@@ -23,6 +24,7 @@ import abundances_plots as abplots
 import lines_identification as lident
 import tardis_gui as gui
 import ionization_plot as ions
+import tardis_multiple_runner as multirunner
 
 elements = { 'neut': 0, 'h': 1, 'he': 2, 'li': 3, 'be': 4, 'b': 5, 'c': 6, 'n': 7, 'o': 8, 'f': 9, 'ne': 10, 'na': 11, 'mg': 12, 'al': 13, 'si': 14, 'p': 15, 's': 16, 'cl': 17, 'ar': 18, 'k': 19,    'ca': 20, 'sc': 21, 'ti': 22, 'v': 23, 'cr': 24, 'mn': 25, 'fe': 26, 'co': 27, 'ni': 28, 'cu': 29, 'zn': 30, 'ga': 31, 'ge': 32, 'as': 33, 'se': 34, 'br': 35, 'kr': 36, 'rb': 37, 'sr': 38, 'y': 39,  'zr': 40, 'nb': 41, 'mo': 42, 'tc': 43, 'ru': 44, 'rh': 45, 'pd': 46, 'ag': 47, 'cd': 48}
 inv_elements = dict([(v,k) for k, v in elements.items()])
@@ -151,7 +153,6 @@ class tardisthread(QtCore.QThread):
             print("Warning: could not determine runids")
             self.endtrigger.emit(1)
             return False
-        
         try:
             self.parent.define_numberOfEpochs()
 
@@ -165,17 +166,34 @@ class tardisthread(QtCore.QThread):
             return False
 
         try:
+            self.Nthreads = 16
+            multirunner.write_submit(self.Nthreads, self.parent.runid)
 
-            startpos = logging.getLogger().handlers[0].stream.tell()
+            self.files =[]
+            self.t_end = time.time() + 600
+            while time.time() < self.t_end:
+                for file in glob.glob("completed_run_%05d*" % self.parent.runid):
+                    self.files.append(file)
+
+                if len(self.files) == len(self.parent.numberOfEpochs):
+                    self.endtrigger.emit(0)
+                    print("Tardis run done")
+                    break
+
+                time.sleep(30)
+
+            [os.remove(i) for i in self.files]
+
+        #   startpos = logging.getLogger().handlers[0].stream.tell()
             #mdl = run_tardis(self.parent.tardis_config)
-            mdl = run_tardis('./tardis_%05d_%d.yml' % (self.parent.runid, max(self.parent.numberOfEpochs)))
-            mdl.save_spectra("spec_%05d_%d.dat" % (self.parent.runid, max(self.parent.numberOfEpochs)))
-            if self.parent.save_model:
-                mdl.to_hdf5("model_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)))
-                mdl.atom_data.lines.to_hdf("lines_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)), "lines")
+          #  mdl = run_tardis('./tardis_%05d_%d.yml' % (self.parent.runid, max(self.parent.numberOfEpochs)))
+          #  mdl.save_spectra("spec_%05d_%d.dat" % (self.parent.runid, max(self.parent.numberOfEpochs)))
+          #  if self.parent.save_model:
+          #      mdl.to_hdf5("model_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)))
+          #      mdl.atom_data.lines.to_hdf("lines_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)), "lines")
 
-            endpos = logging.getLogger().handlers[0].stream.tell()
-            logging.getLogger().handlers[0].stream.flush()
+          #  endpos = logging.getLogger().handlers[0].stream.tell()
+           # logging.getLogger().handlers[0].stream.flush()
 
           #  f = open("tardis_general.log", "r")
           #  f.seek(startpos)
@@ -185,19 +203,8 @@ class tardisthread(QtCore.QThread):
           #  modellog.close()
           #  f.close()
 
-            #  when running tardis via this gui, the model is stored at
-            # the end in the gui (in order to be able to use the old tardis gui
-            # to do some additional diagnostics on the model). Could it be that
-            # the python garbage collector does not clean up the old tardis
-            # model whenever a new run is started? If this is the case, how
-            # could we get around it? With something like:
-            # del(self.parent.mdl)
-            # self.parent.mdl = mdl
-            # @Talytha: as an ugly quickfix, just comment the following line
-            self.parent.mdl = mdl
-            logging.getLogger().handlers[0].stream.seek(0)
-            self.endtrigger.emit(0)
-            print("Tardis run done")
+          #  self.parent.mdl = mdl
+          #  logging.getLogger().handlers[0].stream.seek(0)
 
         except Exception:
             ex_type, ex, tb = sys.exc_info()
@@ -860,7 +867,7 @@ class Example(QtGui.QWidget):
 
             print("Warning: could not determine the number of epochs")
             return False
-        
+
         self.runidplot_entry.setText(str(self.runid))
         self.oldrunidplot_entry.setText(str(self.oldrunid))
         self.nepochplot_entry.setText(str(max(self.numberOfEpochs)))

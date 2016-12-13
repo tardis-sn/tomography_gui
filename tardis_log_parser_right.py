@@ -86,7 +86,7 @@ class tardis_log_parser(object):
     def parse(self):
 
         pattern = re.compile(".*Plasma stratification.*")
-        pattern_2 = re.compile(".*t_inner.*")
+        pattern_2 = re.compile(".*for t_inner=.*")
         buffer = self.fstream.readline()
 
         j = 0
