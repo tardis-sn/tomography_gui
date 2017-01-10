@@ -153,6 +153,7 @@ class tardisthread(QtCore.QThread):
             print("Warning: could not determine runids")
             self.endtrigger.emit(1)
             return False
+
         try:
             self.parent.define_numberOfEpochs()
 
@@ -166,54 +167,50 @@ class tardisthread(QtCore.QThread):
             return False
 
         try:
-            self.Nthreads = 16
-            multirunner.write_submit(self.Nthreads, self.parent.runid)
-
-            self.files =[]
-            self.t_end = time.time() + 600
-            while time.time() < self.t_end:
-                for file in glob.glob("completed_run_%05d*" % self.parent.runid):
-                    self.files.append(file)
-
-                if len(self.files) == len(self.parent.numberOfEpochs):
-                    self.endtrigger.emit(0)
-                    print("Tardis run done")
-                    break
-
-                time.sleep(30)
-
-            [os.remove(i) for i in self.files]
-
-        #   startpos = logging.getLogger().handlers[0].stream.tell()
-            #mdl = run_tardis(self.parent.tardis_config)
-          #  mdl = run_tardis('./tardis_%05d_%d.yml' % (self.parent.runid, max(self.parent.numberOfEpochs)))
-          #  mdl.save_spectra("spec_%05d_%d.dat" % (self.parent.runid, max(self.parent.numberOfEpochs)))
-          #  if self.parent.save_model:
-          #      mdl.to_hdf5("model_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)))
-          #      mdl.atom_data.lines.to_hdf("lines_%05d_%d.h5" % (self.parent.runid, max(self.parent.numberOfEpochs)), "lines")
-
-          #  endpos = logging.getLogger().handlers[0].stream.tell()
-           # logging.getLogger().handlers[0].stream.flush()
-
-          #  f = open("tardis_general.log", "r")
-          #  f.seek(startpos)
-          #  log = f.read(endpos-startpos)
-          #  modellog = open("tardis_%05d.log" % self.parent.runid, "w")
-          #  modellog.write(log)
-          #  modellog.close()
-          #  f.close()
-
-          #  self.parent.mdl = mdl
-          #  logging.getLogger().handlers[0].stream.seek(0)
+            self.parent.define_run_mode()
 
         except Exception:
             ex_type, ex, tb = sys.exc_info()
             traceback.print_tb(tb)
             print(ex_type)
-            print(ex)
-            print("Warning: tardis run failed")
+
             self.endtrigger.emit(1)
             return False
+
+        if self.parent.run_mode is not None:
+
+            try:
+                print self.parent.run_mode
+                self.Nthreads = 16
+                multirunner.write_submit(self.Nthreads, self.parent.runid, self.parent.run_mode)
+                self.files = []
+                self.t_end = time.time() + 600
+                while time.time() < self.t_end:
+
+                    for file in glob.glob("completed_run_%05d*" % self.parent.runid):
+                        self.files.append(file)
+
+                    if len(self.files) == len(self.parent.numberOfEpochs):
+                        break
+
+                    time.sleep(30)
+
+                [os.remove(i) for i in self.files]
+                self.endtrigger.emit(0)
+                print("Tardis run done")
+
+            except Exception:
+                ex_type, ex, tb = sys.exc_info()
+                traceback.print_tb(tb)
+                print(ex_type)
+                print(ex)
+                print("Warning: Tardis run failed")
+                self.endtrigger.emit(1)
+                return False
+
+        else:
+            print("Warning: could not determine in which system to run Tardis." + "\n" + " Please choose between local machine or batch.")
+            self.endtrigger.emit(1)
 
 class MatplotlibWidget(FigureCanvas):
 
@@ -257,6 +254,8 @@ class Example(QtGui.QWidget):
         self.save_model = False
         self.redden_model = False
         self.virtual_model = False
+        self.runlocalmachine = False
+        self.runbatch = False
         self.show_oldrun = False
         self.filter_model = False
         self.mdl = None
@@ -272,7 +271,7 @@ class Example(QtGui.QWidget):
         self.addshell_index = 0
         self.removeshell_index = 0
         self.window = None
-
+        self.run_mode = None
         self.numberOfEpochs = None
 
         self.table = QtGui.QTableWidget(5,Zmax+7,self)
@@ -291,10 +290,11 @@ class Example(QtGui.QWidget):
         self.distance_entry = QtGui.QLineEdit(self)
         self.reddening_entry = QtGui.QLineEdit(self)
         self.window_entry = QtGui.QLineEdit(self)
-        self.savemodel_cbox = QtGui.QCheckBox("Save model", self)
-        self.showoldrun_cbox = QtGui.QCheckBox("Show previous run", self)
-        self.filtermodel_cbox = QtGui.QCheckBox("Apply Savitzky Golay filter", self)
-
+        self.savemodel_cbox = QtGui.QCheckBox("Save Model", self)
+        self.showoldrun_cbox = QtGui.QCheckBox("Show Previous Run", self)
+        self.filtermodel_cbox = QtGui.QCheckBox("Apply Savitzky Golay Filter", self)
+        self.runlocalmachine_cbox = QtGui.QCheckBox("Run at Local Machine", self)
+        self.runbatch_cbox = QtGui.QCheckBox("Run at Batch System", self)
         self.appendshell_button = QtGui.QPushButton("Append Shell")
         self.addshell_button = QtGui.QPushButton("Add Shell")
         self.removeshell_button = QtGui.QPushButton("Remove Shell")
@@ -363,6 +363,8 @@ class Example(QtGui.QWidget):
         abundance_control_grid.addWidget(self.addshell_button, 2, 3)
         abundance_control_grid.addWidget(self.addshell_entry, 3, 3)
         abundance_control_grid.addWidget(self.saveabundances_button, 4, 0)
+        abundance_control_grid.addWidget(self.runlocalmachine_cbox, 4, 1)
+        abundance_control_grid.addWidget(self.runbatch_cbox, 4, 2)
         abundance_control_grid.addWidget(self.runtardis_button, 5, 0)
         abundance_control_grid.addWidget(self.savemodel_cbox, 5, 1)
 
@@ -540,6 +542,8 @@ class Example(QtGui.QWidget):
         self.runidion_entry.textChanged[str].connect(self.runidion_entry_changed)
         self.ion_entry.textChanged[str].connect(self.ion_entry_changed)
         self.clearplot_button.clicked.connect(self.clear_plot)
+        self.runlocalmachine_cbox.stateChanged.connect(self.runlocalmachine_changed)
+        self.runbatch_cbox.stateChanged.connect(self.runbatch_changed)
 
         self.setGeometry(300, 300, 400, 300)
         self.setWindowTitle('Tardis Abundance Tomography')
@@ -613,6 +617,20 @@ class Example(QtGui.QWidget):
         else:
             self.rescale_model = False
 
+    def runlocalmachine_changed(self, state):
+
+        if state == QtCore.Qt.Checked:
+            self.runlocalmachine = True
+        else:
+            self.runlocalmachine = False
+
+    def runbatch_changed(self, state):
+
+        if state == QtCore.Qt.Checked:
+            self.runbatch = True
+        else:
+            self.runbatch = False
+
     def savingfiles_started(self, sig):
 
         print("Saving files started")
@@ -633,6 +651,22 @@ class Example(QtGui.QWidget):
 
 
         self.reddening = reddening
+
+    def define_run_mode(self):
+
+        if self.runbatch or self.runlocalmachine:
+            if self.runbatch:
+                self.run_mode = "batch"
+            if self.runlocalmachine:
+                self.run_mode = "local"
+
+        else:
+            self.run_mode = None
+
+       # if not self.runlocalmachine:
+       #     self.run_mode = None
+
+#        return self.run_mode
 
     def define_numberOfEpochs(self):
 
@@ -822,14 +856,26 @@ class Example(QtGui.QWidget):
 
             print("Warning: could not determine runids")
             return False
+
         fname = "tardis_%05d_%d.yml" % (self.runid, max(self.numberOfEpochs))
+
         try:
             self.tardis_config = yaml.safe_load(open(fname, "r"))
         except IOError:
             print("Warning: could not open Tardis config '%s'" % fname)
             return False
 
-            ##self.oldlogger = logging.getLogger
+        #try:
+
+        #    self.define_run_mode()
+
+        #except Exception:
+        #    ex_type, ex, tb = sys.exc_info()
+        #    traceback.print_tb(tb)
+        #    print(ex_type)
+        #    print("Warning: could not determine in which system to run Tardis." + "\n" + " Please choose between local machine or batch.")
+        #    return False
+
         thread = tardisthread(self)
         thread.starttrigger.connect(self.tardis_started)
         thread.endtrigger.connect(self.tardis_ended)
@@ -879,14 +925,13 @@ class Example(QtGui.QWidget):
 
         if self.current_data is not None:
             self.old_data = self.current_data
-
         if not self.update_plots():
             print("Warning: Updating Plots after Tardis Run Failed")
             return False
 
         self.oldrunid = self.runid
         self.runid = self.runid + 1
-
+        print(self.runid)
         self.oldrunid_entry.setText(str(self.oldrunid))
         self.runid_entry.setText(str(self.runid))
 
@@ -911,11 +956,11 @@ class Example(QtGui.QWidget):
             return False
 
         try:
-                self.read_nepochplot()
+            self.read_nepochplot()
 
         except ValueError:
-                print("Warning: no epoch specified")
-                return False
+            print("Warning: no epoch specified")
+            return False
 
 
         if self.show_oldrun:
@@ -942,6 +987,7 @@ class Example(QtGui.QWidget):
             f = open(fname, "r")
         except IOError:
             print("Warning: no appropriate spectrum file was found")
+            #raise
             return False
 
         self.current_data = np.loadtxt(fname)
