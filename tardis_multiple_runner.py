@@ -18,12 +18,12 @@ def main(rootname):
 
     return epochs
 
-def write_submit(Nthreads, rootname, mode = 'local'):
+def write_submit(Nthreads, rootname, mode):
 
     epochs = main(rootname)
 
     if mode == 'batch':
-        defaultfile = 'mpa-pascal-defaul.cmd'
+        defaultfile = 'mpa-pascal-default.cmd'
         for i in xrange(len(epochs)):
 
             filename = 'tardis_%05d_%d.yml' %(rootname, epochs[i])
@@ -64,7 +64,6 @@ def write_submit(Nthreads, rootname, mode = 'local'):
             with open("tardis_%05d_%d_err.log" %(rootname, epochs[i]), 'w+') as err:
                 subprocess.Popen(shlex.split("./submit_local_%05d_%d.sh" % (rootname, epochs[i])), stdout = err , stderr = err )
 
-#if __name__ == "__main__":
-#    write_submit(Nthreads, rootname, mode)
+if __name__ == "__main__":
+    write_submit(Nthreads, rootname, mode)
 
-write_submit(16,4)
