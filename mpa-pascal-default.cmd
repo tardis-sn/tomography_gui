@@ -13,12 +13,12 @@
 #$ -l h_cpu=48:00:00
 # job name (arbitrary)
 #$ -N tardis
-# notifcation options
+# notification options
 #$ -m beas
 #$ -M talytha@mpa-garching.mpg.de
 # stdout and stderr redirection
 #$ -o /afs/mpa/home/talytha/logs/$JOB_NAME.$JOB_ID.out
-#$ -e /afs/mpa/home/talytha/logs/$JOB_NAME.$JOB_ID.err
+#$ -e /afs/mpa/home/talytha/abntomgui-src/tardis_rootname_epoch.log
 
 echo "Preparing module system..."
 source /usr/common/appl/modules-tcl/init/bash
