@@ -12,6 +12,7 @@ def run(filename, runid, nepoch):
     mdl.runner.spectrum_virtual.to_ascii("virtual_spec_%05d_%d.dat" % (runid, nepoch))
     mdl.runner.to_hdf("model_%05d_%d.h5" % (runid, nepoch))
     mdl.plasma.atomic_data.lines.to_hdf("lines_%05d_%d.h5" % (runid, nepoch), "lines")
+    mdl.plasma.ion_number_density.to_hdf("ionization_%05d_%d.h5" % (runid, nepoch), "ion_number_density")
 
     #mdl.save_spectra("spec_%05d_%d.dat" % (runid, nepoch))
     #mdl.to_hdf5("model_%05d_%d.h5" % (runid, nepoch))
