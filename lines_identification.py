@@ -30,7 +30,7 @@ def lineshist(model, lines, lam_min, lam_max,fig=None):
         axes = fig.get_axes()
         ax1 = axes[0]
 
-        Z = natom(model,lines, lam_min, lam_max)
+        Z=natom(model,lines, lam_min, lam_max)
         bins=np.linspace(0.5,32.5,33)
         ax1.hist(Z, bins = bins)
         ax1.set_xlabel("Atomic Number")
