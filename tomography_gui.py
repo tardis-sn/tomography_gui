@@ -16,7 +16,7 @@ from matplotlib.backends.backend_qt4 import NavigationToolbar2QT as NavigationTo
 from tardis import run_tardis
 import logging
 import StringIO
-import tardis_log_parser_right as logparse
+import tardis_log_parser as logparse
 import time
 import reddening as red
 import create_input as cr
@@ -209,6 +209,7 @@ class tardisthread(QtCore.QThread):
                 return False
 
         else:
+
             print("Warning: could not determine in which system to run Tardis." + "\n" + " Please choose between local machine or batch.")
             self.endtrigger.emit(1)
 
@@ -268,6 +269,7 @@ class Example(QtGui.QWidget):
         self.nepochlines = None
         self.nepochplot = None
         self.ion = None
+        self.nepochion = None
         self.addshell_index = 0
         self.removeshell_index = 0
         self.window = None
@@ -310,18 +312,18 @@ class Example(QtGui.QWidget):
         self.reddenmodel_cbox = QtGui.QCheckBox("Apply Reddening", self)
         self.clearplot_button = QtGui.QPushButton("Clear Figure")
 
-        self.radiationfieldconvergence_button = QtGui.QPushButton("Show Radiation Field Convergence")
         self.bbconvergence_button = QtGui.QPushButton("Show Black-Body Convergence")
         self.runidconvergence_entry = QtGui.QLineEdit(self)
+        self.epochidconvergence_entry = QtGui.QLineEdit(self)
 
         self.abundancesraw_button=QtGui.QPushButton("Raw Abundances")
         self.abundancesmix_cbox = QtGui.QCheckBox("Mixed Abundances", self)
         self.runidabundances_entry= QtGui.QLineEdit(self)
         self.nepochabundances_entry = QtGui.QLineEdit(self)
 
-        self.trads_button=QtGui.QPushButton("Radiation Temperatures")
-        self.ws_button=QtGui.QPushButton("Dilution Factors")
-        self.runidtrads_ws_entry=QtGui.QLineEdit(self)
+        self.tradsws_button=QtGui.QPushButton("Radiation Temperatures and Dilution Factors")
+        self.runidtradsws_entry=QtGui.QLineEdit(self)
+        self.epochidtradsws_entry=QtGui.QLineEdit(self)
 
         self.lineshist_button=QtGui.QPushButton("Last Element Contribution")
         self.lineskromer_button=QtGui.QPushButton("Kromer Plot")
@@ -333,14 +335,15 @@ class Example(QtGui.QWidget):
         self.ion_button=QtGui.QPushButton("Ionization Plot")
         self.runidion_entry=QtGui.QLineEdit(self)
         self.ion_entry=QtGui.QLineEdit(self)
+        self.nepochion_entry = QtGui.QLineEdit(self)
 
         self.addshell_entry.setText("0")
         self.removeshell_entry.setText("0")
 
         self.spectrum_figure = MatplotlibWidget(self)
-        self.convergence_figure = MatplotlibWidget(self, fig = "convergence")
+        self.convergence_figure = MatplotlibWidget(self)
         self.abundances_figure= MatplotlibWidget(self)
-        self.trads_ws_figure=MatplotlibWidget(self, fig = "convergence")
+        self.tradsws_figure=MatplotlibWidget(self, fig = "convergence")
         self.lines_figure=MatplotlibWidget(self, fig= "convergence")
         self.ion_figure=MatplotlibWidget(self)
 
@@ -397,47 +400,51 @@ class Example(QtGui.QWidget):
 
         convergence_control_grid = QtGui.QGridLayout()
 
-        convergence_control_grid.addWidget(QtGui.QLabel("Convergence: Run ID"), 0, 0)
+        convergence_control_grid.addWidget(QtGui.QLabel("Run ID: "), 0, 0)
         convergence_control_grid.addWidget(self.runidconvergence_entry, 0, 1)
+        convergence_control_grid.addWidget(QtGui.QLabel("Epoch: "), 0, 2)
+        convergence_control_grid.addWidget(self.epochidconvergence_entry, 0, 3)
         convergence_control_grid.addWidget(self.bbconvergence_button, 1, 0)
-        convergence_control_grid.addWidget(self.radiationfieldconvergence_button, 1, 1)
 
         abundances_control_grid= QtGui.QGridLayout()
 
-        abundances_control_grid.addWidget(QtGui.QLabel("Abundances: Run ID"), 0, 0)
-        abundances_control_grid.addWidget(self.runidabundances_entry,0,1)
-        abundances_control_grid.addWidget(QtGui.QLabel("Epoch"), 0, 2)
-        abundances_control_grid.addWidget(self.nepochabundances_entry,0,3)
-        abundances_control_grid.addWidget(self.abundancesraw_button,1,0)
-        abundances_control_grid.addWidget(self.abundancesmix_cbox,1,1)
+        abundances_control_grid.addWidget(QtGui.QLabel("Run ID: "), 0, 0)
+        abundances_control_grid.addWidget(self.runidabundances_entry, 0, 1)
+        abundances_control_grid.addWidget(QtGui.QLabel("Epoch: "), 0, 2)
+        abundances_control_grid.addWidget(self.nepochabundances_entry, 0, 3)
+        abundances_control_grid.addWidget(self.abundancesraw_button, 1, 0)
+        abundances_control_grid.addWidget(self.abundancesmix_cbox, 1, 1)
 
-        trads_ws_control_grid= QtGui.QGridLayout()
+        tradsws_control_grid= QtGui.QGridLayout()
 
-        trads_ws_control_grid.addWidget(QtGui.QLabel("Trads Ws Run: ID"),0,0)
-        trads_ws_control_grid.addWidget(self.runidtrads_ws_entry,0,1)
-        trads_ws_control_grid.addWidget(self.trads_button,1,0)
-        trads_ws_control_grid.addWidget(self.ws_button,1,1)
+        tradsws_control_grid.addWidget(QtGui.QLabel("Run ID: "), 0, 0)
+        tradsws_control_grid.addWidget(self.runidtradsws_entry, 0, 1)
+        tradsws_control_grid.addWidget(QtGui.QLabel("Epoch: "), 0, 2)
+        tradsws_control_grid.addWidget(self.epochidtradsws_entry, 0, 3)
+        tradsws_control_grid.addWidget(self.tradsws_button, 1, 0)
 
         lines_control_grid= QtGui.QGridLayout()
 
-        lines_control_grid.addWidget(QtGui.QLabel("Lines: Run ID"),0,0)
-        lines_control_grid.addWidget(self.runidlines_entry,0,1)
-        lines_control_grid.addWidget(QtGui.QLabel("Lambda Min"),0,2)
-        lines_control_grid.addWidget(self.lamin_entry,0,3)
-        lines_control_grid.addWidget(QtGui.QLabel("Lambda Max"),0,4)
-        lines_control_grid.addWidget(self.lamax_entry,0,5)
-        lines_control_grid.addWidget(QtGui.QLabel("Epoch"), 0,6)
-        lines_control_grid.addWidget(self.nepochlines_entry,0,7)
-        lines_control_grid.addWidget(self.lineshist_button,1,0)
-        lines_control_grid.addWidget(self.lineskromer_button,1,1)
+        lines_control_grid.addWidget(QtGui.QLabel("Run ID: "), 0, 0)
+        lines_control_grid.addWidget(self.runidlines_entry, 0, 1)
+        lines_control_grid.addWidget(QtGui.QLabel("Epoch: "), 0, 2)
+        lines_control_grid.addWidget(self.nepochlines_entry, 0, 3)
+        lines_control_grid.addWidget(QtGui.QLabel("Lambda Min: "), 0, 4)
+        lines_control_grid.addWidget(self.lamin_entry, 0, 5)
+        lines_control_grid.addWidget(QtGui.QLabel("Lambda Max: "), 0, 6)
+        lines_control_grid.addWidget(self.lamax_entry, 0, 7)
+        lines_control_grid.addWidget(self.lineshist_button, 1, 0)
+        lines_control_grid.addWidget(self.lineskromer_button, 1, 1)
 
         ion_control_grid = QtGui.QGridLayout()
 
-        ion_control_grid.addWidget(QtGui.QLabel("Ionization: Run ID"),0,0)
-        ion_control_grid.addWidget(self.runidion_entry,0,1)
-        ion_control_grid.addWidget(QtGui.QLabel("Name of the Element"),0,2)
-        ion_control_grid.addWidget(self.ion_entry,0,3)
-        ion_control_grid.addWidget(self.ion_button,0,4)
+        ion_control_grid.addWidget(QtGui.QLabel("Run ID: "), 0, 0)
+        ion_control_grid.addWidget(self.runidion_entry, 0, 1)
+        ion_control_grid.addWidget(QtGui.QLabel("Epoch: "), 0, 2)
+        ion_control_grid.addWidget(self.nepochion_entry, 0, 3)
+        ion_control_grid.addWidget(QtGui.QLabel("Name of the Element: "), 0, 4)
+        ion_control_grid.addWidget(self.ion_entry, 0, 5)
+        ion_control_grid.addWidget(self.ion_button, 0, 6)
 
 
         abundance_vbox = QtGui.QVBoxLayout()
@@ -466,12 +473,12 @@ class Example(QtGui.QWidget):
         abundances_vbox.addLayout(abundances_control_grid)
         diagnostics_tab_widget.addTab(abundances_tab, "Abundances")
 
-        trads_ws_tab= QtGui.QWidget()
-        trads_ws_vbox= QtGui.QVBoxLayout(trads_ws_tab)
-        trads_ws_vbox.addWidget(self.trads_ws_figure)
-        trads_ws_vbox.addWidget(self.trads_ws_figure.toolbar)
-        trads_ws_vbox.addLayout(trads_ws_control_grid)
-        diagnostics_tab_widget.addTab(trads_ws_tab, "Trads and Ws")
+        tradsws_tab= QtGui.QWidget()
+        tradsws_vbox= QtGui.QVBoxLayout(tradsws_tab)
+        tradsws_vbox.addWidget(self.tradsws_figure)
+        tradsws_vbox.addWidget(self.tradsws_figure.toolbar)
+        tradsws_vbox.addLayout(tradsws_control_grid)
+        diagnostics_tab_widget.addTab(tradsws_tab, "Trads and Ws")
 
         lines_tab= QtGui.QWidget()
         lines_vbox= QtGui.QVBoxLayout(lines_tab)
@@ -507,12 +514,10 @@ class Example(QtGui.QWidget):
         self.saveabundances_button.clicked.connect(self.save_input_files)
         self.loadobservation_button.clicked.connect(self.load_observation_file)
         self.bbconvergence_button.clicked.connect(self.plot_bb_convergence)
-        self.radiationfieldconvergence_button.clicked.connect(self.plot_rad_convergence)
         self.abundancesraw_button.clicked.connect(self.plot_abundances_raw)
         self.abundancesmix_cbox.stateChanged.connect(self.abundancesmix_changed)
 
-        #self.trads_button.clicked.connect(self.plot_trads)
-        #self.ws_button.clicked.connect(self.plot_ws)
+        self.tradsws_button.clicked.connect(self.plot_tradsws_convergence)
         self.lineshist_button.clicked.connect(self.plot_lineshist)
         self.lineskromer_button.clicked.connect(self.plot_lineskromer)
         self.ion_button.clicked.connect(self.plot_ion)
@@ -532,10 +537,14 @@ class Example(QtGui.QWidget):
         self.oldrunidplot_entry.textChanged[str].connect(self.oldrunidplot_entry_changed)
         self.showgui_button.clicked.connect(self.show_gui)
         self.runidconvergence_entry.textChanged[str].connect(self.runidconvergence_entry_changed)
+        self.epochidconvergence_entry.textChanged[str].connect(self.epochidconvergence_entry_changed)
+        self.runidtradsws_entry.textChanged[str].connect(self.runidtradsws_entry_changed)
+        self.epochidtradsws_entry.textChanged[str].connect(self.epochidtradsws_entry_changed)
         self.runidabundances_entry.textChanged[str].connect(self.runidabundances_entry_changed)
         self.nepochabundances_entry.textChanged[str].connect(self.nepochabundances_entry_changed)
         self.nepochlines_entry.textChanged[str].connect(self.nepochlines_entry_changed)
-        self.runidtrads_ws_entry.textChanged[str].connect(self.runidtrads_ws_entry_changed)
+        self.nepochion_entry.textChanged[str].connect(self.nepochion_entry_changed)
+
         self.runidlines_entry.textChanged[str].connect(self.runidlines_entry_changed)
         self.lamin_entry.textChanged[str].connect(self.lamin_entry_changed)
         self.lamax_entry.textChanged[str].connect(self.lamax_entry_changed)
@@ -663,10 +672,6 @@ class Example(QtGui.QWidget):
         else:
             self.run_mode = None
 
-       # if not self.runlocalmachine:
-       #     self.run_mode = None
-
-#        return self.run_mode
 
     def define_numberOfEpochs(self):
 
@@ -758,13 +763,32 @@ class Example(QtGui.QWidget):
         self.runidplot = runid
         self.oldrunidplot = oldrunid
 
+    def read_epochidconvergence(self):
+
+        try:
+            epochid = int(self.epochidconvergencetext)
+        except ValueError:
+            print("Warning: invalid epochid '%s'" % self.epochidconvergencetext)
+            raise Exception
+
+        self.epochidconvergence = epochid
+
+    def read_epochidtradsws(self):
+
+        try:
+            epochid = int(self.epochidtradswstext)
+        except ValueError:
+            print("Warning: invalid epochid '%s'" % self.epochidtradsws)
+            raise Exception
+
+        self.epochidtradsws = epochid
 
     def read_runidconvergence(self):
 
         try:
             runid = int(self.runidconvergencetext)
         except ValueError:
-            print("Warning: invalid runid '%s'" % runidconvergencetext)
+            print("Warning: invalid runid '%s'" % self.runidconvergencetext)
             raise Exception
 
         self.runidconvergence = runid
@@ -775,7 +799,7 @@ class Example(QtGui.QWidget):
        try:
            runid = int(self.runidabundancestext)
        except ValueError:
-           print ("Warning: invalid runid '%s'" % runidabundancestext)
+           print ("Warning: invalid runid '%s'" % self.runidabundancestext)
            raise Exception
 
        self.runidabundances = runid
@@ -785,7 +809,7 @@ class Example(QtGui.QWidget):
        try:
            nepochabundances = int(self.nepochabundancestext)
        except ValueError:
-           print ("Warning: invalid epoch '%s'" % nepochabundancestext)
+           print ("Warning: invalid epoch '%s'" % self.nepochabundancestext)
            raise Exception
 
        self.nepochabundances = nepochabundances
@@ -795,28 +819,38 @@ class Example(QtGui.QWidget):
        try:
            nepochlines = int(self.nepochlinestext)
        except ValueError:
-           print ("Warning: invalid epoch '%s'" % nepochlinestext)
+           print ("Warning: invalid epoch '%s'" % self.nepochlinestext)
            raise Exception
 
        self.nepochlines = nepochlines
 
-    def read_runidtrads_ws(self):
+    def read_nepochion(self):
+
+       try:
+           nepochion = int(self.nepochiontext)
+       except ValueError:
+           print ("Warning: invalid epoch '%s'" % self.nepochiontext)
+           raise Exception
+
+       self.nepochion = nepochion
+
+    def read_runidtradsws(self):
 
         try:
-            runid = int(self.runidtrads_wstext)
+            runid = int(self.runidtradswstext)
         except ValueError:
-            print("Warning: invalid runid '%s'" % runidtrads_wstext)
+            print("Warning: invalid runid '%s'" % self.runidtradswstext)
 
             raise Exception
 
-        self.runidtrads_ws = runid
+        self.runidtradsws = runid
 
     def read_runidlines(self):
 
         try:
             runid = int(self.runidlinestext)
         except ValueError:
-            print("Warning: invalid runid '%s'" % runidlinestext)
+            print("Warning: invalid runid '%s'" % self.runidlinestext)
 
             raise Exception
 
@@ -827,7 +861,7 @@ class Example(QtGui.QWidget):
         try:
             runid = int(self.runidiontext)
         except ValueError:
-            print("Warning: invalid runid '%s'" % runidiontext)
+            print("Warning: invalid runid '%s'" % self.runidiontext)
 
             raise Exception
 
@@ -838,7 +872,7 @@ class Example(QtGui.QWidget):
         try:
             ion = str(self.iontext)
         except ValueError:
-            print("Warning: invalid runid '%f'" % iontext)
+            print("Warning: invalid runid '%f'" % self.iontext)
 
             raise Exception
 
@@ -864,17 +898,6 @@ class Example(QtGui.QWidget):
         except IOError:
             print("Warning: could not open Tardis config '%s'" % fname)
             return False
-
-        #try:
-
-        #    self.define_run_mode()
-
-        #except Exception:
-        #    ex_type, ex, tb = sys.exc_info()
-        #    traceback.print_tb(tb)
-        #    print(ex_type)
-        #    print("Warning: could not determine in which system to run Tardis." + "\n" + " Please choose between local machine or batch.")
-        #    return False
 
         thread = tardisthread(self)
         thread.starttrigger.connect(self.tardis_started)
@@ -918,10 +941,15 @@ class Example(QtGui.QWidget):
         self.oldrunidplot_entry.setText(str(self.oldrunid))
         self.nepochplot_entry.setText(str(max(self.numberOfEpochs)))
         self.runidconvergence_entry.setText(str(self.runid))
+        self.epochidconvergence_entry.setText(str(max(self.numberOfEpochs)))
         self.runidabundances_entry.setText(str(self.runid))
-        #self.runidtrads_ws_entry.setText(str(self.runid))
+        self.nepochabundances_entry.setText(str(max(self.numberOfEpochs)))
+        self.runidtradsws_entry.setText(str(self.runid))
+        self.epochidtradsws_entry.setText(str(max(self.numberOfEpochs)))
         self.runidlines_entry.setText(str(self.runid))
+        self.nepochlines_entry.setText(str(max(self.numberOfEpochs)))
         self.runidion_entry.setText(str(self.runid))
+        self.nepochion_entry.setText(str(max(self.numberOfEpochs)))
 
         if self.current_data is not None:
             self.old_data = self.current_data
@@ -931,7 +959,6 @@ class Example(QtGui.QWidget):
 
         self.oldrunid = self.runid
         self.runid = self.runid + 1
-        print(self.runid)
         self.oldrunid_entry.setText(str(self.oldrunid))
         self.runid_entry.setText(str(self.runid))
 
@@ -1000,14 +1027,6 @@ class Example(QtGui.QWidget):
 
     def plot_bb_convergence(self):
 
-        self.plot_convergence(mode = "bb")
-
-    def plot_rad_convergence(self):
-
-        self.plot_convergence(mode = "rad")
-
-    def plot_convergence(self, mode = "bb"):
-
         try:
             self.read_runidconvergence()
         except Exception:
@@ -1015,16 +1034,54 @@ class Example(QtGui.QWidget):
             traceback.print_tb(tb)
             print(ex_type)
 
-            print("Warning: could not determine runids")
+            print("Warning: could not determine runid")
             return False
 
-        axes = self.convergence_figure.figure.get_axes()
-        [ax.clear() for ax in self.convergence_figure.figure.get_axes()]
+        try:
+            self.read_epochidconvergence()
+        except Exception:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
+            print(ex_type)
 
-        parser = logparse.tardis_log_parser("tardis_%05d.log" % self.runidconvergence)
-        parser.visualise_convergence(mode = mode, fig = self.convergence_figure.figure)
+            print("Warning: could not determine epochid")
+            return False
 
+        ax = self.convergence_figure.figure.gca()
+        ax.clear()
+
+        parser = logparse.tardis_log_parser("tardis_%d_%d.log" % (self.runidconvergence, self.epochidconvergence), mode = "bb")
+        parser.visualise_convergence(fig = self.convergence_figure.figure)
         self.convergence_figure.figure.canvas.draw()
+
+    def plot_tradsws_convergence(self):
+
+        try:
+            self.read_runidtradsws()
+        except Exception:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
+            print(ex_type)
+
+            print("Warning: could not determine runid")
+            return False
+
+        try:
+            self.read_epochidtradsws()
+        except Exception:
+            ex_type, ex, tb = sys.exc_info()
+            traceback.print_tb(tb)
+            print(ex_type)
+
+            print("Warning: could not determine epochid")
+            return False
+
+        axes = self.tradsws_figure.figure.get_axes()
+        [ax.clear() for ax in self.tradsws_figure.figure.get_axes()]
+
+        parser = logparse.tardis_log_parser("tardis_%d_%d.log" % (self.runidtradsws, self.epochidtradsws), mode = "rad")
+        parser.visualise_convergence(fig = self.tradsws_figure.figure)
+        self.tradsws_figure.figure.canvas.draw()
 
     def plot_ion(self):
 
@@ -1038,11 +1095,16 @@ class Example(QtGui.QWidget):
             print("Warning: could not determine runids")
             return False
 
+        try:
+            self.read_nepochion()
 
-        if self.mdl is None:
-                print("Warning: no model available")
-                return False
+        except ValueError:
+            print("Warning: no epoch specified")
+            return False
 
+       # if self.mdl is None:
+       #         print("Warning: no model available")
+       #         return False
 
         try:
             self.read_ion()
@@ -1050,20 +1112,22 @@ class Example(QtGui.QWidget):
             print("Warning: no element selected")
             return False
 
-        #check = False
         for k, v in elements.items():
             if self.ion == k:
                 #check = True
                 self.ion = k
 
         ax = self.ion_figure.figure.gca()
+        model= "ionization_%05d_%d.h5" % (self.runidion, self.nepochion)
+        fname ="densities_%05d_%d.dat" % (self.runidion, self.nepochion)
+
 
         if self.ion is not None:
             [line.remove() for line in ax.get_lines()]
-            ions.ion_plot(self.mdl, self.ion, Nshellsfinal, fig= self.ion_figure.figure)
+            ions.ion_plot(model, fname, self.ion, fig = self.ion_figure.figure)
 
         else:
-                print ("No existing element")
+                print ("No Element Found")
                 return False
 
         ax.autoscale_view(True,True,True)
@@ -1167,14 +1231,6 @@ class Example(QtGui.QWidget):
             lident.lineskromer(model, lines, self.lamin, self.lamax, fig = self.lines_figure.figure)
             ax2.autoscale_view(True,True,True)
         self.lines_figure.figure.canvas.draw()
-
-    #def plot_trads(self):
-
-     #   self.plot_trads_ws(mode="trads")
-
-    #def plot_ws(self):
-
-     #   self.plot_trads_ws(mode="ws")
 
     def plot_abundances_raw(self):
 
@@ -1544,10 +1600,6 @@ class Example(QtGui.QWidget):
             print("Warning: could not determine runids")
             return False
 
-        #print("Starting sleep")
-        #time.sleep(20)
-        #print("Sleeping stopped")
-        #self.parent.nepoch = nepoch
         # write raw abundance file
         fname = "abundances_raw_%05d_%d.txt" % (self.runid , nepoch)
 
@@ -1656,9 +1708,21 @@ class Example(QtGui.QWidget):
         else:
             return True
 
+    def runidtradsws_entry_changed(self, text):
+
+        self.runidtradswstext = text
+
+    def epochidtradsws_entry_changed(self, text):
+
+        self.epochidtradswstext = text
+
     def runidconvergence_entry_changed(self, text):
 
         self.runidconvergencetext = text
+
+    def epochidconvergence_entry_changed(self, text):
+
+        self.epochidconvergencetext = text
 
     def runidabundances_entry_changed (self,text):
 
@@ -1668,6 +1732,10 @@ class Example(QtGui.QWidget):
 
         self.nepochabundancestext = text
 
+    def nepochion_entry_changed (self,text):
+
+        self.nepochiontext = text
+
     def nepochlines_entry_changed (self,text):
 
         self.nepochlinestext = text
@@ -1675,10 +1743,6 @@ class Example(QtGui.QWidget):
     def nepochplot_entry_changed (self,text):
 
         self.nepochplottext = text
-
-    def runidtrads_ws_entry_changed(self,text):
-
-        self.runidtrads_wstext = text
 
     def runidlines_entry_changed(self,text):
 
