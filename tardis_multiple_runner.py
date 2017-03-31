@@ -13,7 +13,6 @@ def main(rootname):
 
     for i in xrange (nepochs):
         epoch =(naepochs[i].rsplit("_")[-1].strip()).rsplit(".")[-2].strip()
-        print epoch
         epochs.append(int(epoch))
 
     return epochs
@@ -61,7 +60,7 @@ def write_submit(Nthreads, rootname, mode):
 
             subprocess.Popen(shlex.split("chmod +x submit_local_%05d_%d.sh" % (rootname, epochs[i])))
 
-            with open("tardis_%05d_%d_err.log" %(rootname, epochs[i]), 'w+') as err:
+            with open("tardis_%d_%d.log" %(rootname, epochs[i]), 'w+') as err:
                 subprocess.Popen(shlex.split("./submit_local_%05d_%d.sh" % (rootname, epochs[i])), stdout = err , stderr = err )
 
 if __name__ == "__main__":
