@@ -184,7 +184,7 @@ class tardisthread(QtCore.QThread):
                 self.Nthreads = 16
                 multirunner.write_submit(self.Nthreads, self.parent.runid, self.parent.run_mode)
                 self.files = []
-                self.t_end = time.time() + 600
+                self.t_end = time.time() + 6000
                 while time.time() < self.t_end:
 
                     for file in glob.glob("completed_run_%05d*" % self.parent.runid):
