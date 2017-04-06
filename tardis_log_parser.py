@@ -83,7 +83,7 @@ class tardis_log_parser(object):
             j = 0
             t_inner = []
             while buffer != "":
-                if j > 1000:
+                if j > 100000:
                     print("Something went wrong in outer loop; aborting")
                     break
                 if re.match(pattern, buffer):
