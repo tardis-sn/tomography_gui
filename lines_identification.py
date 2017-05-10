@@ -35,46 +35,5 @@ def lineshist(model, lines, lam_min, lam_max,fig=None):
         ax1.hist(Z, bins = bins)
         ax1.set_xlabel("Atomic Number")
         ax1.legend()
-    #fig = plt.gcf()
-    #return fig
 
-def create_color_list(start, end, cmap_name):
-    jet = cm = plt.get_cmap(cmap_name)
-    cNorm  = colors.Normalize(vmin=start, vmax=end)
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-    _tmp = []
-    for i in np.arange(start, end, 1):
-        _tmp.append(scalarMap.to_rgba(i))
-    return _tmp
-
-def lineskromer(model, lines,lam_min,lam_max,fig,nbins=300):
-
-    if fig is None:
-        fig = plt.figure()
-        ax1 = fig.add_subplot(211)
-    else:
-        axes = fig.get_axes()
-        ax2 = axes[1]
-
-        x=np.linspace(lam_min,lam_max,nbins)
-        xright=x[1:]
-        xleft=x[:-1]
-        y=np.zeros((32,nbins-1))
-        bins=np.linspace(0.5,32.5,33)
-        for i in xrange (nbins-1):
-            Z=natom(model, lines, xleft[i],xright[i])
-            xs,ys=np.histogram(Z,bins)
-            y[:,i]=xs
-
-        _jet=cmx.jet
-        cNorm  = colors.Normalize(vmin=1, vmax=32)
-        map_array = np.linspace(1, 31, 32)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=_jet)
-        scalarMap.set_array(map_array)
-        xcenters=(xright+xleft)*0.5
-        my_map = create_color_list(0,31,'jet')
-        ax2.stackplot(xcenters,y,colors=my_map)
-        cbar = fig.colorbar(scalarMap, ax = ax2, orientation='horizontal', boundaries = np.linspace(0, 31, 32))
-        cbar.set_ticks(np.linspace(1, 32, 33))
-        labels=["h","he","li","be","b","c","n","o","f","ne","na","mg","al","si","p","s","cl","ar","k","ca","sc","ti","v","cr","mn","fe","co","ni","cu","zn","ga","ge"]
-        cbar.set_ticklabels(labels)
+    return fig
