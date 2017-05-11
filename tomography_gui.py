@@ -25,6 +25,7 @@ import lines_identification as lident
 import tardis_gui as gui
 import ionization_plot as ions
 import tardis_multiple_runner as multirunner
+import tardis_kromer_plot as tkp
 
 elements = { 'neut': 0, 'h': 1, 'he': 2, 'li': 3, 'be': 4, 'b': 5, 'c': 6, 'n': 7, 'o': 8, 'f': 9, 'ne': 10, 'na': 11, 'mg': 12, 'al': 13, 'si': 14, 'p': 15, 's': 16, 'cl': 17, 'ar': 18, 'k': 19,    'ca': 20, 'sc': 21, 'ti': 22, 'v': 23, 'cr': 24, 'mn': 25, 'fe': 26, 'co': 27, 'ni': 28, 'cu': 29, 'zn': 30, 'ga': 31, 'ge': 32, 'as': 33, 'se': 34, 'br': 35, 'kr': 36, 'rb': 37, 'sr': 38, 'y': 39,  'zr': 40, 'nb': 41, 'mo': 42, 'tc': 43, 'ru': 44, 'rh': 45, 'pd': 46, 'ag': 47, 'cd': 48}
 inv_elements = dict([(v,k) for k, v in elements.items()])
@@ -184,7 +185,7 @@ class tardisthread(QtCore.QThread):
                 self.Nthreads = 16
                 multirunner.write_submit(self.Nthreads, self.parent.runid, self.parent.run_mode)
                 self.files = []
-                self.t_end = time.time() + 600
+                self.t_end = time.time() + 6000
                 while time.time() < self.t_end:
 
                     for file in glob.glob("completed_run_%05d*" % self.parent.runid):
@@ -1157,10 +1158,6 @@ class Example(QtGui.QWidget):
 
         if mode == 'ht':
 
-            #if self.mdl is None:
-            #    print("Warning: no model available")
-            #    return False
-
             try:
                 self.read_lamin()
             except ValueError:
@@ -1191,10 +1188,6 @@ class Example(QtGui.QWidget):
             ax1.autoscale_view(True,True,True)
 
         elif mode == 'kr':
-
-            #if self.mdl is None:
-                #print("Warning: no model available")
-                #return False
 
             try:
                 self.read_lamin()
@@ -1228,7 +1221,9 @@ class Example(QtGui.QWidget):
             ax2=axes[1]
             ax2.clear()
             #[ax2.clear() for ax2 in self.lines_figure.figure.get_axes()]
-            lident.lineskromer(model, lines, self.lamin, self.lamax, fig = self.lines_figure.figure)
+            kromer_plot = tkp.tardis_kromer_plotter(mdl = model, lines = lines)
+            kromer_plot.generate_plot(ax = ax2, ylim = [0, 7e39], twinx = True)
+
             ax2.autoscale_view(True,True,True)
         self.lines_figure.figure.canvas.draw()
 
@@ -1254,7 +1249,7 @@ class Example(QtGui.QWidget):
         ax = self.abundances_figure.figure.gca()
         [line.remove() for line in ax.get_lines()]
         fname = "abundances_raw_%05d_%d.txt" % (self.runidabundances, self.nepochabundances)
-        abplots.abundances_raw(fname,fig = self.abundances_figure.figure)
+        abplots.abundances_raw(fname, fig = self.abundances_figure.figure)
         ax.autoscale_view(True,True,True)
         self.abundances_figure.figure.canvas.draw()
 

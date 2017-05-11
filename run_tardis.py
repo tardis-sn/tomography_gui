@@ -7,8 +7,10 @@ import argparse
 def run(filename, runid, nepoch):
     mdl = run_tardis(filename)
     complete_file = open('completed_run_%05d_%d.txt' % (runid, nepoch), 'w+')
+    #print "completed run file created"
     complete_file.close()
     mdl.runner.spectrum.to_ascii("spec_%05d_%d.dat" % (runid, nepoch))
+    #print "save spectra"
     mdl.runner.spectrum_virtual.to_ascii("virtual_spec_%05d_%d.dat" % (runid, nepoch))
     mdl.runner.to_hdf("model_%05d_%d.h5" % (runid, nepoch))
     mdl.plasma.atomic_data.lines.to_hdf("lines_%05d_%d.h5" % (runid, nepoch), "lines")
