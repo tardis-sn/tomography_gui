@@ -268,6 +268,7 @@ class Example(QtGui.QWidget):
         self.lamin = None
         self.nepochabundances = None
         self.nepochlines = None
+        self.nepochkromer = None
         self.nepochplot = None
         self.ion = None
         self.nepochion = None
@@ -327,11 +328,14 @@ class Example(QtGui.QWidget):
         self.epochidtradsws_entry=QtGui.QLineEdit(self)
 
         self.lineshist_button=QtGui.QPushButton("Last Element Contribution")
-        self.lineskromer_button=QtGui.QPushButton("Kromer Plot")
         self.runidlines_entry=QtGui.QLineEdit(self)
         self.lamin_entry=QtGui.QLineEdit(self)
         self.lamax_entry=QtGui.QLineEdit(self)
         self.nepochlines_entry = QtGui.QLineEdit(self)
+
+        self.lineskromer_button=QtGui.QPushButton("Kromer Plot")
+        self.runidkromer_entry=QtGui.QLineEdit(self)
+        self.nepochkromer_entry = QtGui.QLineEdit(self)
 
         self.ion_button=QtGui.QPushButton("Ionization Plot")
         self.runidion_entry=QtGui.QLineEdit(self)
@@ -345,7 +349,8 @@ class Example(QtGui.QWidget):
         self.convergence_figure = MatplotlibWidget(self)
         self.abundances_figure= MatplotlibWidget(self)
         self.tradsws_figure=MatplotlibWidget(self, fig = "convergence")
-        self.lines_figure=MatplotlibWidget(self, fig= "convergence")
+        self.lines_figure=MatplotlibWidget(self)
+        self.kromer_figure=MatplotlibWidget(self)
         self.ion_figure=MatplotlibWidget(self)
 
         table_hbox = QtGui.QHBoxLayout()
@@ -435,7 +440,14 @@ class Example(QtGui.QWidget):
         lines_control_grid.addWidget(QtGui.QLabel("Lambda Max: "), 0, 6)
         lines_control_grid.addWidget(self.lamax_entry, 0, 7)
         lines_control_grid.addWidget(self.lineshist_button, 1, 0)
-        lines_control_grid.addWidget(self.lineskromer_button, 1, 1)
+
+        kromer_control_grid= QtGui.QGridLayout()
+
+        kromer_control_grid.addWidget(QtGui.QLabel("Run ID: "), 0, 0)
+        kromer_control_grid.addWidget(self.runidkromer_entry, 0, 1)
+        kromer_control_grid.addWidget(QtGui.QLabel("Epoch: "), 0, 2)
+        kromer_control_grid.addWidget(self.nepochkromer_entry, 0, 3)
+        kromer_control_grid.addWidget(self.lineskromer_button, 1, 0)
 
         ion_control_grid = QtGui.QGridLayout()
 
@@ -487,6 +499,13 @@ class Example(QtGui.QWidget):
         lines_vbox.addWidget(self.lines_figure.toolbar)
         lines_vbox.addLayout(lines_control_grid)
         diagnostics_tab_widget.addTab(lines_tab, "Lines Identification")
+
+        kromer_tab= QtGui.QWidget()
+        kromer_vbox= QtGui.QVBoxLayout(kromer_tab)
+        kromer_vbox.addWidget(self.kromer_figure)
+        kromer_vbox.addWidget(self.kromer_figure.toolbar)
+        kromer_vbox.addLayout(kromer_control_grid)
+        diagnostics_tab_widget.addTab(kromer_tab, "Kromer Plot")
 
         ion_tab= QtGui.QWidget()
         ion_vbox= QtGui.QVBoxLayout(ion_tab)
@@ -549,6 +568,8 @@ class Example(QtGui.QWidget):
         self.runidlines_entry.textChanged[str].connect(self.runidlines_entry_changed)
         self.lamin_entry.textChanged[str].connect(self.lamin_entry_changed)
         self.lamax_entry.textChanged[str].connect(self.lamax_entry_changed)
+        self.runidkromer_entry.textChanged[str].connect(self.runidkromer_entry_changed)
+        self.nepochkromer_entry.textChanged[str].connect(self.nepochkromer_entry_changed)
         self.runidion_entry.textChanged[str].connect(self.runidion_entry_changed)
         self.ion_entry.textChanged[str].connect(self.ion_entry_changed)
         self.clearplot_button.clicked.connect(self.clear_plot)
@@ -857,6 +878,27 @@ class Example(QtGui.QWidget):
 
         self.runidlines = runid
 
+    def read_runidkromer(self):
+
+        try:
+            runid = int(self.runidkromertext)
+        except ValueError:
+            print("Warning: invalid runid '%s'" % self.runidkromertext)
+
+            raise Exception
+
+        self.runidkromer = runid
+
+    def read_nepochkromer(self):
+
+       try:
+           nepochkromer = int(self.nepochkromertext)
+       except ValueError:
+           print ("Warning: invalid epoch '%s'" % self.nepochkromertext)
+           raise Exception
+
+       self.nepochkromer = nepochkromer
+
     def read_runidion(self):
 
         try:
@@ -949,6 +991,8 @@ class Example(QtGui.QWidget):
         self.epochidtradsws_entry.setText(str(max(self.numberOfEpochs)))
         self.runidlines_entry.setText(str(self.runid))
         self.nepochlines_entry.setText(str(max(self.numberOfEpochs)))
+        self.runidkromer_entry.setText(str(self.runid))
+        self.nepochkromer_entry.setText(str(max(self.numberOfEpochs)))
         self.runidion_entry.setText(str(self.runid))
         self.nepochion_entry.setText(str(max(self.numberOfEpochs)))
 
@@ -1144,19 +1188,17 @@ class Example(QtGui.QWidget):
 
     def plot_lines(self, mode = "ht"):
 
-        try:
-            self.read_runidlines()
-        except Exception:
-            ex_type, ex, tb = sys.exc_info()
-            traceback.print_tb(tb)
-            print(ex_type)
-
-            print("Warning: could not determine runids")
-            return False
-
-        axes = self.lines_figure.figure.get_axes()
-
         if mode == 'ht':
+
+            try:
+                self.read_runidlines()
+            except Exception:
+                ex_type, ex, tb = sys.exc_info()
+                traceback.print_tb(tb)
+                print(ex_type)
+
+                print("Warning: could not determine runids")
+                return False
 
             try:
                 self.read_lamin()
@@ -1177,55 +1219,54 @@ class Example(QtGui.QWidget):
                 print("Warning: no epoch specified")
                 return False
 
-
+            ax = self.lines_figure.figure.gca()
             model= "model_%05d_%d.h5" % (self.runidlines, self.nepochlines)
             lines = "lines_%05d_%d.h5" % (self.runidlines, self.nepochlines)
 
-            ax1=axes[0]
-            ax1.clear()
+            ax.clear()
             #[ax1.clear() for ax1 in self.lines_figure.figure.get_axes()]
-            lident.lineshist(model, lines, self.lamin, self.lamax,fig = self.lines_figure.figure)
-            ax1.autoscale_view(True,True,True)
+            lident.lineshist(model, lines, self.lamin, self.lamax, fig = self.lines_figure.figure)
+            ax.autoscale_view(True,True,True)
+            self.lines_figure.figure.canvas.draw()
 
         elif mode == 'kr':
 
             try:
-                self.read_lamin()
-            except ValueError:
-                print("Warning: no minimum value for lambda")
+                self.read_runidkromer()
+            except Exception:
+                ex_type, ex, tb = sys.exc_info()
+                traceback.print_tb(tb)
+                print(ex_type)
+
+                print("Warning: could not determine runids")
                 return False
 
             try:
-                self.read_lamax()
-            except ValueError:
-                print("Warning: no maximum value for lambda")
-                return False
-
-            try:
-                self.read_nepochlines()
+                self.read_nepochkromer()
 
             except ValueError:
                 print("Warning: no epoch specified")
                 return False
 
 
-            if len(axes)==3:
-                self.lines_figure.figure.delaxes(self.lines_figure.figure.get_axes()[-1])
-            self.lines_figure.figure.delaxes(self.lines_figure.figure.get_axes()[-1])
-            self.lines_figure.figure.add_subplot(212)
+           # if len(ax)==3:
+           #     self.kromer_figure.figure.delaxes(self.kromer_figure.figure.get_axes()[-1])
+           # self.kromer_figure.figure.delaxes(self.kromer_figure.figure.get_axes()[-1])
+           # self.kromer_figure.figure.add_subplot(111)
 
-            model= "model_%05d_%d.h5" % (self.runidlines, self.nepochlines)
-            lines = "lines_%05d_%d.h5" % (self.runidlines, self.nepochlines)
+            model= "model_%05d_%d.h5" % (self.runidkromer, self.nepochkromer)
+            lines = "lines_%05d_%d.h5" % (self.runidkromer, self.nepochkromer)
 
-            axes = self.lines_figure.figure.get_axes()
-            ax2=axes[1]
-            ax2.clear()
-            #[ax2.clear() for ax2 in self.lines_figure.figure.get_axes()]
+            ax = self.kromer_figure.figure.gca()
+            axes = self.kromer_figure.figure.
+            self.kromer_figure.figure.delaxes(self.kromer_figure.figure.axes[0])
+            #if len(ax)==2:
+             #   self.kromer_figure.figure.delaxes(self.kromer_figure.figure.get_axes()[-1])
             kromer_plot = tkp.tardis_kromer_plotter(mdl = model, lines = lines)
-            kromer_plot.generate_plot(ax = ax2, ylim = [0, 7e39], twinx = True)
+            kromer_plot.generate_plot(ax = ax, twinx = True)
 
-            ax2.autoscale_view(True,True,True)
-        self.lines_figure.figure.canvas.draw()
+            ax.autoscale_view(True,True,True)
+            self.kromer_figure.figure.canvas.draw()
 
     def plot_abundances_raw(self):
 
@@ -1742,6 +1783,14 @@ class Example(QtGui.QWidget):
     def runidlines_entry_changed(self,text):
 
         self.runidlinestext = text
+
+    def runidkromer_entry_changed(self,text):
+
+        self.runidkromertext = text
+
+    def nepochkromer_entry_changed (self,text):
+
+        self.nepochkromertext = text
 
     def lamin_entry_changed(self,text):
 
