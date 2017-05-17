@@ -26,6 +26,7 @@ def lineshist(model, lines, lam_min, lam_max,fig=None):
     if fig is None:
         fig = plt.figure()
         ax1 = fig.add_subplot(211)
+
     else:
         axes = fig.get_axes()
         ax1 = axes[0]
