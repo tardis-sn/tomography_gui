@@ -278,6 +278,8 @@ class Example(QtGui.QWidget):
         self.run_mode = None
         self.numberOfEpochs = None
 
+        self.krom = None
+
         self.table = QtGui.QTableWidget(5,Zmax+7,self)
         self.table.setHorizontalHeaderLabels(["active", "Vmin", "Vmax", "t", "logL/Lsun", "lam min", "lam max"] + [inv_elements[z].capitalize() for z in xrange(1, Zmax+1)])
         self.addshell_entry = QtGui.QLineEdit(self)
@@ -1249,23 +1251,19 @@ class Example(QtGui.QWidget):
                 return False
 
 
-           # if len(ax)==3:
-           #     self.kromer_figure.figure.delaxes(self.kromer_figure.figure.get_axes()[-1])
-           # self.kromer_figure.figure.delaxes(self.kromer_figure.figure.get_axes()[-1])
-           # self.kromer_figure.figure.add_subplot(111)
-
             model= "model_%05d_%d.h5" % (self.runidkromer, self.nepochkromer)
             lines = "lines_%05d_%d.h5" % (self.runidkromer, self.nepochkromer)
 
-            ax = self.kromer_figure.figure.gca()
-            axes = self.kromer_figure.figure.
-            self.kromer_figure.figure.delaxes(self.kromer_figure.figure.axes[0])
-            #if len(ax)==2:
-             #   self.kromer_figure.figure.delaxes(self.kromer_figure.figure.get_axes()[-1])
-            kromer_plot = tkp.tardis_kromer_plotter(mdl = model, lines = lines)
-            kromer_plot.generate_plot(ax = ax, twinx = True)
+            if self.krom :
+                axes = self.kromer_figure.figure.get_axes()
+                for i in xrange(len(axes)):
+                    self.kromer_figure.figure.delaxes(axes[i])
+                self.kromer_figure.figure.canvas.draw()
 
-            ax.autoscale_view(True,True,True)
+            kromer_plot = tkp.tardis_kromer_plotter(mdl = model, lines = lines)
+            self.krom =  kromer_plot.generate_plot(ax = self.kromer_figure.figure.gca(), twinx = True)
+
+            self.kromer_figure.figure.gca().autoscale_view(True, True, True)
             self.kromer_figure.figure.canvas.draw()
 
     def plot_abundances_raw(self):
