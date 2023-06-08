@@ -15,8 +15,6 @@ def ionization(model, species, NShells):
 
 def ion_plot(model, fname, species, fig, NShells = 20):
     data = np.loadtxt(fname, skiprows=2)
-    velocities = data[:,1]
-
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -24,6 +22,8 @@ def ion_plot(model, fname, species, fig, NShells = 20):
     else:
         ax = fig.get_axes()[0]
         ions = ionization(model, species, NShells)
+        velocities = data[:,1]
+
         for i in xrange(4):
             ax.plot(velocities[:20], ions[:,i], label="%s %d" % (species, i))
 

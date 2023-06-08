@@ -2,7 +2,7 @@
 from __future__ import print_function
 import numpy as np
 
-def calculate_reddening_correction (Wavelengths,L,E_BV):
+def calculate_reddening_correction(Wavelengths,L,E_BV):
     LRed=[]
     mask = []
     Rv=3.1
@@ -21,7 +21,7 @@ def calculate_reddening_correction (Wavelengths,L,E_BV):
         elif X>=3.3 and X<=8:
             if X<5.9:
                 Fa=Fb=0
-            elif X>=5.9 and X<=8:
+            else:
                 Fa=-0.04473*((X-5.9)**2)-0.009779*((X-5.9)**3)
                 Fb=0.213*((X-5.9)**2)+0.1207*((X-5.9)**3)
             a=1.752-0.316*X-0.104/((X-4.67)**2+0.341)+Fa

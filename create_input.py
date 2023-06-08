@@ -22,65 +22,60 @@ def abunds_dic(data):
 #fazer uma funcao, chamala quantas vezes forem o numero de linhas
 
 def one_row_abundances(X6,fname):
-    table=open(fname,"w")
-    ind='#Index Z=1  -  Z=%d' % Zmax
-    table.write("{0:>3s}\n".format(ind))
-    #n=len(Xinitial)
-    X6shell=np.zeros(Zmax+1)
+    with open(fname,"w") as table:
+        ind='#Index Z=1  -  Z=%d' % Zmax
+        table.write("{0:>3s}\n".format(ind))
+        #n=len(Xinitial)
+        X6shell=np.zeros(Zmax+1)
 
-    for k,i in X6.items():
-        z=abunds_idents[k]
-        X6shell[z]=i
+        for k,i in X6.items():
+            z=abunds_idents[k]
+            X6shell[z]=i
 
-    #duplicate line
-    X6shelldup=X6shell.copy()
+        #duplicate line
+        X6shelldup=X6shell.copy()
 
-    #write index
-    X6shelldup[0]= str("1")
+            #write index
+        X6shelldup[0] = "1"
 
-    #write data to file
-    table.write("%s\n" % (" ".join(map(str,X6shell))))
-    table.write("%s\n" % (" ".join(map(str,X6shelldup))))
-    #table.write("%3d %s\n" % (" ".join(map(str,Xinitial)))) 
-    table.close()
+        #write data to file
+        table.write("%s\n" % (" ".join(map(str,X6shell))))
+        table.write("%s\n" % (" ".join(map(str,X6shelldup))))
 
 
 def write_first_abundance_line(Xi,X6,fname):
 
-    table=open(fname,"w")
-    ind='#Index Z=1  -  Z=%d' % Zmax
-    table.write("{0:>3s}\n".format(ind))
-    #n=len(Xinitial)
-    Xinitial=np.zeros(Zmax+1)
-    X6shell=np.zeros(Zmax+1)
+    with open(fname,"w") as table:
+        ind='#Index Z=1  -  Z=%d' % Zmax
+        table.write("{0:>3s}\n".format(ind))
+        #n=len(Xinitial)
+        Xinitial=np.zeros(Zmax+1)
+        X6shell=np.zeros(Zmax+1)
 
-    for k, i in Xi.items():
-        z = abunds_idents[k]
-        Xinitial[z] = i
+        for k, i in Xi.items():
+            z = abunds_idents[k]
+            Xinitial[z] = i
 
-    for k,i in X6.items():
-        z=abunds_idents[k]
-        X6shell[z]=i
+        for k,i in X6.items():
+            z=abunds_idents[k]
+            X6shell[z]=i
 
-    #duplicate line
-    X6shelldup=X6shell.copy()
+        #duplicate line
+        X6shelldup=X6shell.copy()
 
-    #write index
-    X6shelldup[0]= str("1")
-    Xinitial[0]=str("2")
+            #write index
+        X6shelldup[0] = "1"
+        Xinitial[0] = "2"
 
-    #write data to file
-    table.write("%s\n" % (" ".join(map(str,X6shell))))
-    table.write("%s\n" % (" ".join(map(str,X6shelldup))))
-    table.write("%s\n" % (" ".join(map(str,Xinitial))))
-    #table.write("%3d %s\n" % (" ".join(map(str,Xinitial)))) 
-    table.close()
+        #write data to file
+        table.write("%s\n" % (" ".join(map(str,X6shell))))
+        table.write("%s\n" % (" ".join(map(str,X6shelldup))))
+        table.write("%s\n" % (" ".join(map(str,Xinitial))))
 
 def add_abundance_line(X, fname):
-    table=open(fname, "r")
-    #read the data
-    data=np.loadtxt(fname,skiprows=1)
-    table.close()
+    with open(fname, "r") as table:
+        #read the data
+        data=np.loadtxt(fname,skiprows=1)
     #reshuffle the data, i.e. line shifts
     columns,rows=data.shape
     for i in xrange(columns):
@@ -95,25 +90,18 @@ def add_abundance_line(X, fname):
         Xinitial[z]=i
 
     #duplicate line
-    Xinitial[0]=str('1')
+    Xinitial[0] = '1'
     data[-columns,0:]=Xinitial
     Xduplicate=Xinitial.copy()
-    Xduplicate[0]=str('0')
+    Xduplicate[0] = '0'
     new_data=np.append(np.array([Xduplicate]),data, axis=0)
-    #print new_data
-    table = open(fname, "w")
-    ind='#Index Z=1  -  Z=%d' % Zmax
-    #print new_data.shape
-    new_columns, new_rows = new_data.shape
-    table.write("{0:>3s}\n".format(ind))
-    for i in xrange(new_columns):
-        table.write(" %s\n" % (" ".join(map(str,new_data[i,:]))))
-
-    #table.write("%3d %s\n" % (1, " ".join(map(str,Xduplicate))))
-    #move the arrays up and delete the last
-
-    #write abundances
-    table.close()
+    with open(fname, "w") as table:
+        ind='#Index Z=1  -  Z=%d' % Zmax
+        #print new_data.shape
+        new_columns, new_rows = new_data.shape
+        table.write("{0:>3s}\n".format(ind))
+        for i in xrange(new_columns):
+            table.write(" %s\n" % (" ".join(map(str,new_data[i,:]))))
 
 #Write file with 2 shells
 #for outershell and -6d shell 
@@ -142,10 +130,7 @@ def write_abunds_table(data, _runid, nepoch):
 
 def read_w7_hydro():
 
-    #read the hydro file
-    data=np.loadtxt("w7.hydro",skiprows=2)
-
-    return data
+    return np.loadtxt("w7.hydro",skiprows=2)
 
 def extrapolate(vmax,npoints):
     data=read_w7_hydro()
@@ -200,47 +185,43 @@ def remap_density_by_analytical_integration(vmin,vmax,nshells,npoints):
     for j in xrange(WN):
         if j==WN-1:
             break
-        else:
-            for i in xrange(N):
-                if vbounds[i]<w7_vel[j+1]:
-                    if i==N-1:
-                        #last hachinger cell
-                        break
-                    else:
+        for i in xrange(N):
+            if vbounds[i]<w7_vel[j+1]:
+                if i==N-1:
+                    #last hachinger cell
+                    break
                         #partially in shell
-                        if vbounds[i+1]>w7_vel[j+1]:
-                            if vbounds[i]<w7_vel[j]:
-                                rho=(densities[j]*(w7_vel[j+1]**3-w7_vel[j]**3))/(vbounds[i+1]**3-vbounds[i]**3)
-                                #print densities[j]
-                                rho_w7.append(rho)
-                            else:
-                                rho=(densities[j]*(w7_vel[j+1]**3-vbounds[i]**3))/(vbounds[i+1]**3-vbounds[i]**3)
-                                #print densities[j]
-                                rho_w7.append(rho)
-
-                        else:
-                            #completely in shell
-                            rho=(densities[j]*(vbounds[i+1]**3-w7_vel[j]**3))/(vbounds[i+1]**3-vbounds[i]**3)
-                            if rho>0:
-                                rho_w7.append(rho)
-                                #print densities[j]
-                                rho_w7=np.array(rho_w7)
-                                rho_t=rho_w7.sum()
-                                rho_total.append(rho_t)
-                                #print rho_total
-                                rho_w7=[]
-                                #print rho_w7
+                if vbounds[i+1]>w7_vel[j+1]:
+                    rho = (
+                        (densities[j] * (w7_vel[j + 1] ** 3 - w7_vel[j] ** 3))
+                        / (vbounds[i + 1] ** 3 - vbounds[i] ** 3)
+                        if vbounds[i] < w7_vel[j]
+                        else (
+                            densities[j]
+                            * (w7_vel[j + 1] ** 3 - vbounds[i] ** 3)
+                        )
+                        / (vbounds[i + 1] ** 3 - vbounds[i] ** 3)
+                    )
+                    #print densities[j]
+                    rho_w7.append(rho)
+                else:
+                    #completely in shell
+                    rho=(densities[j]*(vbounds[i+1]**3-w7_vel[j]**3))/(vbounds[i+1]**3-vbounds[i]**3)
+                    if rho>0:
+                        rho_w7.append(rho)
+                        #print densities[j]
+                        rho_w7=np.array(rho_w7)
+                        rho_t=rho_w7.sum()
+                        rho_total.append(rho_t)
+                        #print rho_total
+                        rho_w7=[]
+                        #print rho_w7
     return vbounds,rho_total
 #ext_vel1,ext_den
 
 def homologous_expansion(t0,t,vmin,vmax,nshells,npoints):
     vbounds,rho=remap_density_by_analytical_integration(vmin,vmax,nshells,npoints)
-    rho_exp=[] #1/v densities
-#    ext_den_exp=[] #
-    #for 20 ext w7 points, ext_vel1 has shape 20, ext_den and ext_den_exp have 19
-    for i in xrange(nshells+1):
-        rho_ex=((t0/t)**3)*rho[i]
-        rho_exp.append(rho_ex)
+    rho_exp = [((t0/t)**3)*rho[i] for i in xrange(nshells+1)]
     return vbounds,rho_exp
 
 def mix_abunds(velocities, t0,t,vmin,vmax,nshells,data,_runid, nepoch):
@@ -307,16 +288,22 @@ def table_densities(t0,t,vmin,vmax,nshells,runid,nepoch):
     npoints=20
     vbounds,densities=homologous_expansion(t0,t,vmin,vmax,nshells,npoints)
     velocities=vbounds[1:]
-    table=open("densities_%05d_%d.dat" % (runid , nepoch),'w')
-    table.write("%1f %s\n" % (t, "day"))
-    ind='#Index'
-    vel='Velocities [km/s]'
-    den='Densities [g/cm^3]'
-    table.write("{0:<10s} {1:^10s} {2:>15s}\n".format(ind, vel, den))
-    for i in xrange(nshells+1):
-        table.write("{0:>3d}{1:>10s}{2:>10.4e}{3:>10s}{4:>10e}\n".format(i,"".join([" " for j in xrange(10)]), velocities[i],"".join([" " for j in xrange(10)]),densities[i]) )
-
-    table.close()
+    with open("densities_%05d_%d.dat" % (runid , nepoch),'w') as table:
+        table.write("%1f %s\n" % (t, "day"))
+        ind='#Index'
+        vel='Velocities [km/s]'
+        den='Densities [g/cm^3]'
+        table.write("{0:<10s} {1:^10s} {2:>15s}\n".format(ind, vel, den))
+        for i in xrange(nshells+1):
+            table.write(
+                "{0:>3d}{1:>10s}{2:>10.4e}{3:>10s}{4:>10e}\n".format(
+                    i,
+                    "".join([" " for _ in xrange(10)]),
+                    velocities[i],
+                    "".join([" " for _ in xrange(10)]),
+                    densities[i],
+                )
+            )
 
 def construct_W7_input_for_tardis(fname,velocities,t0,t,vmin,vmax, nshells,npoints):
     table_densities(t0,t,vmin,vmax, nshells,npoints)

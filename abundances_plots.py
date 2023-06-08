@@ -45,8 +45,16 @@ def abundances_mix(fname,dfname,fig):
 
     else:
         ax = fig.get_axes()[0]
-        mixed_lines = []
-        mixed_lines.append(ax.plot(velocities,abundsmix[:,6],color='r',label='C',marker='+',linestyle='')[0])
+        mixed_lines = [
+            ax.plot(
+                velocities,
+                abundsmix[:, 6],
+                color='r',
+                label='C',
+                marker='+',
+                linestyle='',
+            )[0]
+        ]
         mixed_lines.append(ax.plot(velocities,abundsmix[:,8],color='b',label='O',marker='+',linestyle='')[0])
         mixed_lines.append(ax.plot(velocities,abundsmix[:,12],color='k',label='Mg',marker='+',linestyle='')[0])
         mixed_lines.append(ax.plot(velocities,abundsmix[:,14],color='c',label='Si',marker='+',linestyle='')[0])

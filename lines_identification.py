@@ -17,9 +17,7 @@ def natom(model,lines,lam_min,lam_max):
     lmds = (lambdas > lam_min)*(lambdas < lam_max)
     lines_id = mdl.get_node("runner").last_line_interaction_out_id.values.read()
     ids = lines_id[lmds]
-    Z = lines.lines.ix[ids].values[:,1].astype(np.int)
-
-    return Z
+    return lines.lines.ix[ids].values[:,1].astype(np.int)
 
 def lineshist(model, lines, lam_min, lam_max,fig=None):
 

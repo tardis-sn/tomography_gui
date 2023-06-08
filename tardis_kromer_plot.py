@@ -428,10 +428,7 @@ class tardis_kromer_plotter(object):
         """prepare the axes for the absorption part of the Kromer plot
         according to the twinx value"""
 
-        if self.twinx:
-            self._pax = self._ax.twinx()
-        else:
-            self._pax = self._ax
+        self._pax = self._ax.twinx() if self.twinx else self._ax
 
     def _generate_emission_part(self):
         """generate the emission part of the Kromer plot"""
@@ -447,10 +444,7 @@ class tardis_kromer_plotter(object):
             weights.append(self.line_out_L[mask])
             colors.append(self.cmap(float(zi) / float(self.zmax)))
 
-        Lnorm = 0
-        for w in weights:
-            Lnorm += np.sum(w)
-
+        Lnorm = sum(np.sum(w) for w in weights)
         ret = self.ax.hist(lams, bins=self.bins, stacked=True,
                  histtype="stepfilled", normed=True, weights=weights)
 
@@ -477,10 +471,7 @@ class tardis_kromer_plotter(object):
             weights.append(self.line_in_L[mask])
             colors.append(self.cmap(float(zi) / float(self.zmax)))
 
-        Lnorm = 0
-        for w in weights:
-            Lnorm -= np.sum(w)
-
+        Lnorm = 0 - sum(np.sum(w) for w in weights)
         ret = self.pax.hist(lams, bins=self.bins, stacked = True,
                             histtype = "stepfilled", normed=True,
                             weights = weights)

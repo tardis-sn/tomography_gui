@@ -169,8 +169,8 @@ class ModelViewer(QtGui.QWidget):
         self.graph.dataplot[0].set_ydata(data)
         self.graph.ax1.relim()
         self.graph.ax1.autoscale()
-        self.graph.ax1.set_title(name + ' vs Shell')
-        self.graph.ax1.set_ylabel(name + ' ' + unit)
+        self.graph.ax1.set_title(f'{name} vs Shell')
+        self.graph.ax1.set_ylabel(f'{name} {unit}')
         normalizer = colors.Normalize(vmin=data.min(), vmax=data.max())
         color_map = plt.cm.ScalarMappable(norm=normalizer, cmap=plt.cm.jet)
         color_map.set_array(data)
@@ -255,13 +255,15 @@ class ShellInfo(QtGui.QDialog):
         self.current_atom_index = self.table1_data.index.values.tolist()[index]
         self.table2_data = self.parent.model.plasma_array.ion_populations[self.shell_index].ix[self.current_atom_index]
         self.ionsdata = SimpleTableModel([['Ion: '], ['Count (Z = %d)' % self.current_atom_index]], iterate_header=(2, 0), index_info=self.table2_data.index.values.tolist())
-        normalized_data = []
-        for item in self.table2_data.values:
-            normalized_data.append(float(item /
-                                   self.parent.model.tardis_config.number_densities[self.shell_index]
-                                   .ix[self.current_atom_index]))
-
-
+        normalized_data = [
+            float(
+                item
+                / self.parent.model.tardis_config.number_densities[
+                    self.shell_index
+                ].ix[self.current_atom_index]
+            )
+            for item in self.table2_data.values
+        ]
         self.ionsdata.addData(normalized_data)
         self.ionstable.setModel(self.ionsdata)
         self.ionstable.connect(self.ionstable.verticalHeader(), QtCore.SIGNAL('sectionClicked(int)'),
@@ -277,9 +279,10 @@ class ShellInfo(QtGui.QDialog):
         self.table3_data = self.parent.model.plasma_array.level_populations[self.shell_index].ix[self.current_atom_index,
                                                                                                  self.current_ion_index]
         self.levelsdata = SimpleTableModel([['Level: '], ['Count (Ion %d)' % self.current_ion_index]], iterate_header=(2, 0), index_info=self.table3_data.index.values.tolist())
-        normalized_data = []
-        for item in self.table3_data.values.tolist():
-            normalized_data.append(float(item / self.table2_data.ix[self.current_ion_index]))
+        normalized_data = [
+            float(item / self.table2_data.ix[self.current_ion_index])
+            for item in self.table3_data.values.tolist()
+        ]
         self.levelsdata.addData(normalized_data)
         self.levelstable.setModel(self.levelsdata)
         self.levelstable.setColumnWidth(0, 120)
@@ -405,27 +408,28 @@ class LineInfo(QtGui.QDialog):
         self.ions_out.sort()
         self.header_list = []
         self.ion_table = (self.grouped_lines_in.wavelength.count().astype(float) / self.grouped_lines_in.wavelength.count().sum()).values.tolist()
-        for z, ion in self.ions_in:
-            self.header_list.append('Z = %d: Ion %d' % (z, ion))
+        self.header_list.extend('Z = %d: Ion %d' % (z, ion) for z, ion in self.ions_in)
 
     def get_transition_table(self, lines, atom, ion):
         grouped = lines.groupby(['atomic_number', 'ion_number'])
         transitions_with_duplicates = lines.ix[grouped.groups[(atom, ion)]].groupby(['level_number_lower', 'level_number_upper']).groups
         transitions = lines.ix[grouped.groups[(atom, ion)]].drop_duplicates().groupby(['level_number_lower', 'level_number_upper']).groups
         transitions_count = []
-        transitions_parsed = []
         for item in transitions.values():
-            c = 0
-            for ditem in transitions_with_duplicates.values():
-                c += ditem.count(item[0])
+            c = sum(ditem.count(item[0]) for ditem in transitions_with_duplicates.values())
             transitions_count.append(c)
-        s = 0
-        for item in transitions_count:
-            s += item
+        s = sum(transitions_count)
         for index in range(len(transitions_count)):
             transitions_count[index] /= float(s)
-        for key, value in transitions.items():
-            transitions_parsed.append("%d-%d (%.2f A)" % (key[0], key[1], self.parent.model.atom_data.lines.ix[value[0]]['wavelength']))
+        transitions_parsed = [
+            "%d-%d (%.2f A)"
+            % (
+                key[0],
+                key[1],
+                self.parent.model.atom_data.lines.ix[value[0]]['wavelength'],
+            )
+            for key, value in transitions.items()
+        ]
         return transitions_parsed, transitions_count
 
     def on_atom_clicked(self, index):
@@ -475,13 +479,18 @@ class SimpleTableModel(QtCore.QAbstractTableModel):
 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole:
-            if self.iterate_header[0] == 1:
+            if (
+                self.iterate_header[0] != 1
+                and self.iterate_header[0] == 2
+                and self.index_info
+            ):
+                return QtCore.QVariant(self.headerdata[0][0] + str(self.index_info[section]))
+            elif (
+                self.iterate_header[0] != 1
+                and self.iterate_header[0] == 2
+                or self.iterate_header[0] == 1
+            ):
                 return QtCore.QVariant(self.headerdata[0][0] + str(section + 1))
-            elif self.iterate_header[0] == 2:
-                if self.index_info:
-                    return QtCore.QVariant(self.headerdata[0][0] + str(self.index_info[section]))
-                else:
-                    return QtCore.QVariant(self.headerdata[0][0] + str(section + 1))
             else:
                 return QtCore.QVariant(self.headerdata[0][section])
         elif orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -595,7 +604,7 @@ class MatplotlibWidget(FigureCanvas):
     def highlight_shell(self, index):
         self.parent.tableview.selectRow(index)
         for i in range(len(self.parent.shells)):
-            if i != index and i != index + 1:
+            if i not in [index, index + 1]:
                 self.parent.shells[i].set_edgecolor('k')
             else:
                 self.parent.shells[i].set_edgecolor('w')
@@ -603,11 +612,11 @@ class MatplotlibWidget(FigureCanvas):
 
     def shell_picker(self, shell, mouseevent):
         if mouseevent.xdata is None:
-            return False, dict()
+            return False, {}
         mouse_r2 = mouseevent.xdata ** 2 + mouseevent.ydata ** 2
         if shell.r_inner ** 2 < mouse_r2 < shell.r_outer ** 2:
-            return True, dict()
-        return False, dict()
+            return True, {}
+        return False, {}
 
     def span_picker(self, span, mouseevent, tolerance=5):
         left = float(span.xy[0][0])
